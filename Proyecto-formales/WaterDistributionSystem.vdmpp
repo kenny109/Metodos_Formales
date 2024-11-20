@@ -1,0 +1,150 @@
+class WaterDistributionSystem
+  types
+    public WaterQuality = <Clean> | <Contaminated>
+
+  instance variables
+    private represas : seq of Represa := [];
+    private comunidades : seq of Comunidad := [];
+ 
+  operations
+    -- Agregar una nueva represa al sistema
+    public AddRepresa : Represa ==> bool
+    AddRepresa(r) ==
+      (represas := represas ^ [r];
+       return true)
+    pre r not in set elems represas
+    post represas = old(represas) ^ [r];
+
+    -- Agregar una nueva comunidad al sistema
+    public AddComunidad : Comunidad ==> bool
+    AddComunidad(c) ==
+      (comunidades := comunidades ^ [c];
+       return true)
+    pre c not in set elems comunidades
+    post comunidades = old(comunidades) ^ [c];
+
+    -- Distribuir el agua entre las comunidades con base en las prioridades
+    public DistributeWater : () ==> bool
+    DistributeWater() ==
+      (dcl success : bool := true;
+       SortCommunitiesByPriority(); 
+       UpdateWaterDistribution(represas, comunidades);
+       success := forall c in set elems comunidades &
+                  c.GetReceivedAmount() >= c.GetWaterNeed();
+       return success)
+    pre len represas > 0 and len comunidades > 0
+    post forall c in set elems comunidades &
+         c.GetReceivedAmount() >= c.GetWaterNeed();
+
+    -- Actualizar la distribución de agua entre las comunidades
+    private UpdateWaterDistribution : seq of Represa * seq of Comunidad ==> ()
+    UpdateWaterDistribution(reps, coms) ==
+      if len reps > 0 and len coms > 0
+      then (let r = hd reps in
+              (UpdateCommunityWater(r, coms);
+               UpdateWaterDistribution(tl reps, coms)))
+      else skip;
+
+    -- Actualizar el agua disponible para cada comunidad desde una represa
+    private UpdateCommunityWater : Represa * seq of Comunidad ==> ()
+    UpdateCommunityWater(r, coms) ==
+      if len coms > 0
+      then (let c = hd coms in
+              (if r.IsWaterAvailable() and c.GetWaterNeed() > c.GetReceivedAmount()
+               then (let amount = min(c.GetWaterNeed() - c.GetReceivedAmount(), r.GetWaterLevel())
+                     in
+                       if amount > 0
+                       then (c.ReceiveWater(amount);
+                             r.ExtractWater(amount))
+                       else skip);
+               UpdateCommunityWater(r, tl coms)))
+      else skip;
+
+    -- Ordenar las comunidades según la prioridad en la distribución de agua
+    private SortCommunitiesByPriority : () ==> ()
+    SortCommunitiesByPriority() ==
+      comunidades := sort(comunidades,
+                          lambda x : Comunidad, y : Comunidad & 
+                            x.GetWaterNeed() / x.GetPopulation() > 
+                            y.GetWaterNeed() / y.GetPopulation());
+
+end WaterDistributionSystem
+
+class Represa
+  instance variables
+    private id : nat1;
+    private nivelAgua : real := 0;
+    private calidadAgua : WaterDistributionSystem`WaterQuality;
+    private capacidad : real;
+ 
+  operations
+    public Represa : nat1 * real * WaterDistributionSystem`WaterQuality * real ==> Represa
+    Represa(i, nivel, calidad, cap) ==
+      (id := i;
+       nivelAgua := nivel;
+       calidadAgua := calidad;
+       capacidad := cap);
+
+    public UpdateWaterLevel : real ==> ()
+    UpdateWaterLevel(level) ==
+      nivelAgua := level
+    pre level >= 0 and level <= capacidad
+    post nivelAgua = level;
+
+    public ExtractWater : real ==> real
+    ExtractWater(amount) ==
+      (nivelAgua := nivelAgua - amount;
+       return amount)
+    pre amount <= nivelAgua
+    post nivelAgua = old(nivelAgua) - amount and RESULT = amount;
+
+    public IsWaterAvailable : () ==> bool
+    IsWaterAvailable() ==
+      return nivelAgua > 0;
+
+    public GetWaterLevel : () ==> real
+    GetWaterLevel() ==
+      return nivelAgua;
+end Represa
+
+class Comunidad
+  instance variables
+    private id : nat1;
+    private poblacion : nat1;
+    private necesidadAgua : real := 0;
+    private cantidadRecibida : real := 0;
+ 
+  operations
+    public Comunidad : nat1 * nat1 ==> Comunidad
+    Comunidad(i, pob) ==
+      (id := i;
+       poblacion := pob);
+
+    public RequestWater : () ==> real
+    RequestWater() ==
+      return necesidadAgua - cantidadRecibida;
+
+    public CalculateNeed : real ==> ()
+    CalculateNeed(minPerPerson) ==
+      necesidadAgua := poblacion * minPerPerson
+    pre minPerPerson > 0
+    post necesidadAgua = poblacion * minPerPerson;
+
+    public ReceiveWater : real ==> ()
+    ReceiveWater(amount) ==
+      cantidadRecibida := cantidadRecibida + amount
+    pre amount > 0
+    post cantidadRecibida = old(cantidadRecibida) + amount;
+
+    public GetWaterNeed : () ==> real
+    GetWaterNeed() ==
+      return necesidadAgua;
+
+    public GetReceivedAmount : () ==> real
+    GetReceivedAmount() ==
+      return cantidadRecibida;
+
+    public GetPopulation : () ==> nat1
+    GetPopulation() ==
+      return poblacion;
+end Comunidad
