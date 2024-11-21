@@ -11,33 +11,37 @@ operations
         else IO`println("FAILED")
       );
 
+    -- Prueba para añadir represas
     public TestAddRepresas: () ==> ()
     TestAddRepresas() ==
       (
         dcl system : WaterDistributionSystem := new WaterDistributionSystem();
         dcl represa1 : Represa := new Represa(1, 1000.0, <Clean>, 2000.0);
         dcl represa2 : Represa := new Represa(2, 1500.0, <Clean>, 3000.0);
-        
+
         dcl result1 : bool := system.AddRepresa(represa1);
         dcl result2 : bool := system.AddRepresa(represa2);
+
         PrintResult("Add Represas", result1 and result2)
       );
 
+    -- Prueba para añadir comunidades
     public TestAddComunidades: () ==> ()
     TestAddComunidades() ==
       (
         dcl system : WaterDistributionSystem := new WaterDistributionSystem();
         dcl comunidad1 : Comunidad := new Comunidad(1, 1000);
         dcl comunidad2 : Comunidad := new Comunidad(2, 1500);
-        
+
         comunidad1.CalculateNeed(100.0);
         comunidad2.CalculateNeed(100.0);
-        
+
         let result1 = system.AddComunidad(comunidad1),
-        result2= system.AddComunidad(comunidad2) in 
+        result2 = system.AddComunidad(comunidad2) in 
         PrintResult("Add Comunidades", result1 and result2)
       );
 
+    -- Prueba para distribuir agua
     public TestDistributeWater: () ==> ()
     TestDistributeWater() ==
       (
@@ -45,24 +49,80 @@ operations
         dcl represa : Represa := new Represa(1, 200000.0, <Clean>, 300000.0);
         dcl comunidad1 : Comunidad := new Comunidad(1, 1000);
         dcl comunidad2 : Comunidad := new Comunidad(2, 1500);
-        
+
         system.AddRepresa(represa);
         system.AddComunidad(comunidad1);
         system.AddComunidad(comunidad2);
-        
+
         comunidad1.CalculateNeed(100.0);
         comunidad2.CalculateNeed(100.0);
-        
+
         let result = system.DistributeWater() in
         PrintResult("Distribute Water", result)
       );
 
+    -- Prueba para verificar la calidad del agua en las represas
+    public TestWaterQuality: () ==> ()
+    TestWaterQuality() ==
+      (
+        dcl system : WaterDistributionSystem := new WaterDistributionSystem();
+        dcl represaClean : Represa := new Represa(1, 1000.0, <Clean>, 2000.0);
+        dcl represaContaminated : Represa := new Represa(2, 1000.0, <Contaminated>, 2000.0);
+
+        let resultClean = system.AddRepresa(represaClean),
+            resultContaminated = system.AddRepresa(represaContaminated) in
+        PrintResult("Water Quality Check", resultClean and not resultContaminated)
+      );
+
+    -- Prueba para exceder el límite de capacidad de una represa
+    public TestRepresaCapacity: () ==> ()
+    TestRepresaCapacity() ==
+      (
+        dcl system : WaterDistributionSystem := new WaterDistributionSystem();
+        dcl represa : Represa := new Represa(1, 2000.0, <Clean>, 1500.0);
+
+        let result = system.AddRepresa(represa) in
+        PrintResult("Represa Capacity", not result)
+      );
+
+    -- Prueba para distribuir agua sin represas disponibles
+    public TestNoRepresas: () ==> ()
+    TestNoRepresas() ==
+      (
+        dcl system : WaterDistributionSystem := new WaterDistributionSystem();
+        dcl comunidad : Comunidad := new Comunidad(1, 1000);
+
+        system.AddComunidad(comunidad);
+
+        let result = system.DistributeWater() in
+        PrintResult("No Represas Available", not result)
+      );
+
+    -- Prueba para comunidades con necesidad de agua inválida
+    public TestInvalidWaterNeed: () ==> ()
+    TestInvalidWaterNeed() ==
+      (
+        dcl system : WaterDistributionSystem := new WaterDistributionSystem();
+        dcl comunidad : Comunidad := new Comunidad(1, 1000);
+
+        -- Calcula una necesidad negativa
+        comunidad.CalculateNeed(-100.0);
+
+        let result = system.AddComunidad(comunidad) in
+        PrintResult("Invalid Water Need", not result)
+      );
+
+    -- Método general para ejecutar todas las pruebas
     public RunAllTests: () ==> ()
     RunAllTests() ==
       (
         TestAddRepresas();
         TestAddComunidades();
-        TestDistributeWater()
+        TestDistributeWater();
+        TestWaterQuality();
+        TestRepresaCapacity();
+        TestNoRepresas();
+        TestInvalidWaterNeed()
       );
 
 end TestWaterDistributionSystem
