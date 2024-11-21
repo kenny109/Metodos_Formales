@@ -13,7 +13,9 @@ class WaterDistributionSystem
       (represas := represas ^ [r];
        return true)
     pre r not in set elems represas
-    post represas = old(represas) ^ [r];
+    post represas = prevRepresa ^ [r]
+    ext wr represas
+    pre_ext prevRepresa = represas;
 
     -- Agregar una nueva comunidad al sistema
     public AddComunidad : Comunidad ==> bool
@@ -21,12 +23,14 @@ class WaterDistributionSystem
       (comunidades := comunidades ^ [c];
        return true)
     pre c not in set elems comunidades
-    post comunidades = old(comunidades) ^ [c];
+    post comunidades = prevComunidad ^ [c]
+    ext wr comunidades
+    pre_ext prevComunidad = comunidades;
 
     -- Distribuir el agua entre las comunidades con base en las prioridades
     public DistributeWater : () ==> bool
     DistributeWater() ==
-      (dcl success : bool := true;
+      (dcl success : bool := false;
        SortCommunitiesByPriority(); 
        UpdateWaterDistribution(represas, comunidades);
        success := forall c in set elems comunidades &
@@ -40,30 +44,32 @@ class WaterDistributionSystem
     private UpdateWaterDistribution : seq of Represa * seq of Comunidad ==> ()
     UpdateWaterDistribution(reps, coms) ==
       if len reps > 0 and len coms > 0
-      then (let r = hd reps in
-              (UpdateCommunityWater(r, coms);
-               UpdateWaterDistribution(tl reps, coms)))
+      then (dcl r : Represa := hd reps;
+            dcl remainingReps : seq of Represa := tl reps;
+            UpdateCommunityWater(r, coms);
+            UpdateWaterDistribution(remainingReps, coms))
       else skip;
 
     -- Actualizar el agua disponible para cada comunidad desde una represa
     private UpdateCommunityWater : Represa * seq of Comunidad ==> ()
     UpdateCommunityWater(r, coms) ==
       if len coms > 0
-      then (let c = hd coms in
-              (if r.IsWaterAvailable() and c.GetWaterNeed() > c.GetReceivedAmount()
-               then (let amount = min(c.GetWaterNeed() - c.GetReceivedAmount(), r.GetWaterLevel())
-                     in
-                       if amount > 0
-                       then (c.ReceiveWater(amount);
-                             r.ExtractWater(amount))
-                       else skip);
-               UpdateCommunityWater(r, tl coms)))
+      then (dcl c : Comunidad := hd coms;
+            dcl remainingComs : seq of Comunidad := tl coms;
+            if r.IsWaterAvailable() and c.GetWaterNeed() > c.GetReceivedAmount()
+            then (dcl requiredAmount : real := c.GetWaterNeed() - c.GetReceivedAmount();
+                  dcl availableAmount : real := r.GetWaterLevel();
+                  dcl transferAmount : real := Real`min(requiredAmount, availableAmount);
+                  if transferAmount > 0
+                  then (c.ReceiveWater(transferAmount);
+                        r.ExtractWater(transferAmount)));
+            UpdateCommunityWater(r, remainingComs))
       else skip;
 
     -- Ordenar las comunidades según la prioridad en la distribución de agua
     private SortCommunitiesByPriority : () ==> ()
     SortCommunitiesByPriority() ==
-      comunidades := sort(comunidades,
+      comunidades := SeqUtil`sort(comunidades,
                           lambda x : Comunidad, y : Comunidad & 
                             x.GetWaterNeed() / x.GetPopulation() > 
                             y.GetWaterNeed() / y.GetPopulation());
