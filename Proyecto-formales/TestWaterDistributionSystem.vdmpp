@@ -4,24 +4,25 @@ operations
     -- Función auxiliar para imprimir resultados
     private static PrintResult: seq of char * bool ==> ()
     PrintResult(testName, result) ==
-      (IO`print(testName);
-       IO`print(": ");
-       if result 
-       then IO`println("PASSED")
-       else IO`println("FAILED"));
-    
+      (
+        IO`print(testName ^ ": ");
+        if result 
+        then IO`println("PASSED")
+        else IO`println("FAILED")
+      );
+
     public TestAddRepresas: () ==> ()
     TestAddRepresas() ==
       (
         dcl system : WaterDistributionSystem := new WaterDistributionSystem();
-        dcl represa1 : Represa := new Represa(1, 1000, <Clean>, 2000);
-        dcl represa2 : Represa := new Represa(2, 1500, <Clean>, 3000);
+        dcl represa1 : Represa := new Represa(1, 1000.0, <Clean>, 2000.0);
+        dcl represa2 : Represa := new Represa(2, 1500.0, <Clean>, 3000.0);
         
         dcl result1 : bool := system.AddRepresa(represa1);
         dcl result2 : bool := system.AddRepresa(represa2);
         PrintResult("Add Represas", result1 and result2)
       );
-    
+
     public TestAddComunidades: () ==> ()
     TestAddComunidades() ==
       (
@@ -29,19 +30,19 @@ operations
         dcl comunidad1 : Comunidad := new Comunidad(1, 1000);
         dcl comunidad2 : Comunidad := new Comunidad(2, 1500);
         
-        comunidad1.CalculateNeed(100);
-        comunidad2.CalculateNeed(100);
+        comunidad1.CalculateNeed(100.0);
+        comunidad2.CalculateNeed(100.0);
         
         let result1 = system.AddComunidad(comunidad1),
-        result2 = system.AddComunidad(comunidad2)
-        in PrintResult("Add Comunidades", result1 and result2)
+        result2= system.AddComunidad(comunidad2) in 
+        PrintResult("Add Comunidades", result1 and result2)
       );
-    
+
     public TestDistributeWater: () ==> ()
     TestDistributeWater() ==
       (
         dcl system : WaterDistributionSystem := new WaterDistributionSystem();
-        dcl represa : Represa := new Represa(1, 200000, <Clean>, 300000);
+        dcl represa : Represa := new Represa(1, 200000.0, <Clean>, 300000.0);
         dcl comunidad1 : Comunidad := new Comunidad(1, 1000);
         dcl comunidad2 : Comunidad := new Comunidad(2, 1500);
         
@@ -49,13 +50,13 @@ operations
         system.AddComunidad(comunidad1);
         system.AddComunidad(comunidad2);
         
-        comunidad1.CalculateNeed(100);
-        comunidad2.CalculateNeed(100);
+        comunidad1.CalculateNeed(100.0);
+        comunidad2.CalculateNeed(100.0);
         
-        dcl result : bool := system.DistributeWater();
+        let result = system.DistributeWater() in
         PrintResult("Distribute Water", result)
       );
-    
+
     public RunAllTests: () ==> ()
     RunAllTests() ==
       (
