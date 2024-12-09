@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE nta PUBLIC '-//Uppaal Team//DTD Flat System 1.6//EN' 'http://www.it.uu.se/research/group/darts/uppaal/flat-1_6.dtd'>
+<nta>
+	<declaration>
+    chan distribuirAgua;
+    </declaration>
+	<template>
+		<name>Comunidad</name>
+		<declaration>
+        int necesidadAgua = 200;
+        int cantidadRecibida = 200;
+        </declaration>
+		<location id="id0" x="-85" y="-136">
+			<name x="-95" y="-170">EsperandoAgua</name>
+		</location>
+		<location id="id1" x="-85" y="-17">
+			<name x="-95" y="-51">RecibiendoAgua</name>
+		</location>
+		<location id="id2" x="-85" y="119">
+			<name x="-95" y="85">Satisfecha</name>
+		</location>
+		<init ref="id0"/>
+		<transition id="id3">
+			<source ref="id1"/>
+			<target ref="id2"/>
+			<label kind="guard" x="-145" y="21">necesidadAgua == 0</label>
+		</transition>
+		<transition id="id4">
+			<source ref="id0"/>
+			<target ref="id1"/>
+			<label kind="guard" x="-145" y="-106">necesidadAgua &gt; 0</label>
+			<label kind="synchronisation" x="-145" y="-91">distribuirAgua?</label>
+			<label kind="assignment" x="-145" y="-76">necesidadAgua = necesidadAgua - cantidadRecibida</label>
+		</transition>
+	</template>
+	<template>
+		<name>Represa</name>
+		<declaration>
+        int nivelAgua = 200;
+        int cantidadDistribuida = 200;
+       </declaration>
+		<location id="id5" x="-76" y="-119">
+			<name x="-86" y="-153">ListoParaDistribuir</name>
+		</location>
+		<location id="id6" x="-76" y="-8">
+			<name x="-86" y="-42">DistribuyendoAgua</name>
+		</location>
+		<location id="id7" x="-76" y="119">
+			<name x="-86" y="85">SinAgua</name>
+		</location>
+		<init ref="id5"/>
+		<transition id="id8">
+			<source ref="id6"/>
+			<target ref="id7"/>
+			<label kind="guard" x="-136" y="25">nivelAgua == 0</label>
+		</transition>
+		<transition id="id9">
+			<source ref="id5"/>
+			<target ref="id6"/>
+			<label kind="guard" x="-136" y="-93">nivelAgua &gt; 0</label>
+			<label kind="synchronisation" x="-136" y="-78">distribuirAgua!</label>
+			<label kind="assignment" x="-136" y="-63">nivelAgua = nivelAgua - cantidadDistribuida</label>
+		</transition>
+	</template>
+	<system>
+    communidad = Comunidad();
+    represa = Represa();
+    system communidad, represa;
+    </system>
+	<queries>
+		<query>
+			<formula>A[] not deadlock</formula>
+			<comment>Verifica que no haya bloqueos en el sistema</comment>
+		</query>
+		<query>
+			<formula>E&lt;&gt; communidad.Satisfecha</formula>
+			<comment>Verifica que la comunidad eventualmente pueda quedar satisfecha</comment>
+		</query>
+	</queries>
+</nta>
